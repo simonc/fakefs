@@ -77,13 +77,21 @@ module FakeFS
       list
     end
     alias_method :remove, :rm
-    alias_method :rm_rf, :rm
     alias_method :rm_r, :rm
 
     def rm_f(list, options = {})
       rm list, options.merge(:force => true)
     end
     alias_method :safe_unlink, :rm_f
+
+    def rm_rf(list, options = {})
+      list = [*list]
+
+      $stderr.puts "rm -rf #{list.join ' '}" if options.delete(:verbose)
+
+      rm list, options.merge(:force => true)
+    end
+    alias_method :rmtree, :rm_rf
 
     def ln_s(target, path, options = {})
       options = { :force => false }.merge(options)
