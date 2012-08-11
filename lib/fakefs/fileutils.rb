@@ -60,11 +60,23 @@ module FakeFS
     end
 
     def rm(list, options = {})
-      Array(list).each do |path|
-        FileSystem.delete(path) or raise Errno::ENOENT.new(path)
-      end
-    end
+      list = [*list]
 
+      cmd = options[:force] ? 'rm -f' : 'rm'
+
+      $stderr.puts "#{cmd} #{list.join ' '}" if options[:verbose]
+
+      return nil if options[:noop]
+
+      list.each do |path|
+        unless FileSystem.delete(path) || options[:force]
+          raise Errno::ENOENT, path
+        end
+      end
+
+      list
+    end
+    alias_method :remove, :rm
     alias_method :rm_rf, :rm
     alias_method :rm_r, :rm
     alias_method :rm_f, :rm
