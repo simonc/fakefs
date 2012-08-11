@@ -46,15 +46,17 @@ module FakeFS
     end
 
     def rmdir(list, options = {})
-      list = [ list ] unless list.is_a?(Array)
-      list.each do |l|
-        parent = l.split('/')
-        parent.pop
-        raise Errno::ENOENT, "No such file or directory - #{l}" unless parent.join == "" || FileSystem.find(parent.join('/'))
-        raise Errno::ENOENT, l unless FileSystem.find(l)
-        raise Errno::ENOTEMPTY, l unless FileSystem.find(l).empty?
-        rm(l)
+      list = [*list]
+
+      $stderr.puts "rmdir #{list.join ' '}" if options[:verbose]
+
+      return nil if options[:noop]
+
+      list.each do |path|
+        rm path
       end
+
+      list
     end
 
     def rm(list, options = {})
