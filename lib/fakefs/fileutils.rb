@@ -79,7 +79,11 @@ module FakeFS
     alias_method :remove, :rm
     alias_method :rm_rf, :rm
     alias_method :rm_r, :rm
-    alias_method :rm_f, :rm
+
+    def rm_f(list, options = {})
+      rm list, options.merge(:force => true)
+    end
+    alias_method :safe_unlink, :rm_f
 
     def ln_s(target, path, options = {})
       options = { :force => false }.merge(options)
