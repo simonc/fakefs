@@ -20,12 +20,29 @@ module FakeFS
     alias_method :mkpath, :mkdir_p
     alias_method :makedirs, :mkdir_p
 
-    def mkdir(path)
-      parent = path.split('/')
-      parent.pop
-      raise Errno::ENOENT, "No such file or directory - #{path}" unless parent.join == "" || parent.join == "." || FileSystem.find(parent.join('/'))
-      raise Errno::EEXIST, "File exists - #{path}" if FileSystem.find(path)
-      FileSystem.add(path, FakeDir.new)
+    # TODO: options[:mode]
+    def mkdir(list, options = {})
+      list = [*list]
+
+      $stderr.puts "mkdir #{list.join ' '}" if options[:verbose]
+
+      return nil if options[:noop]
+
+      list.each_with_object([]) do |path, created|
+        parent = path.split('/')
+        parent.pop
+
+        if FileSystem.find(path)
+          raise Errno::EEXIST, path
+        end
+
+        unless ['', '.'].include?(parent.join '') || FileSystem.find(parent.join '/')
+          raise Errno::ENOENT, path
+        end
+
+        new_dir = FileSystem.add(path, FakeDir.new)
+        created << path
+      end
     end
 
     def rmdir(list, options = {})
