@@ -2,8 +2,20 @@ module FakeFS
   module FileUtils
     extend self
 
-    def mkdir_p(path, options = {})
-      FileSystem.add(path, FakeDir.new)
+    # options: mode
+    def mkdir_p(list, options = {})
+      list = [*list]
+
+      $stderr.puts "mkdir -p #{list.join ' '}" if options[:verbose]
+
+      unless options[:noop]
+        list.each_with_object([]) do |path, created|
+          new_dir = FileSystem.add(path)
+          created << new_dir.to_s
+        end
+      end
+
+      list
     end
     alias_method :mkpath, :mkdir_p
     alias_method :makedirs, :mkdir_p
