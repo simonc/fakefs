@@ -93,6 +93,23 @@ module FakeFS
     end
     alias_method :rmtree, :rm_rf
 
+    def ln(src, dest, options = {})
+      srcs = [*src]
+
+      cmd = options[:force] ? 'ln -f' : 'ln'
+
+      $stderr.puts "#{cmd} #{srcs.join ' '} #{dest}" if options.delete(:verbose)
+
+      return nil if options[:noop]
+
+      if src.is_a? Array
+        ln_list srcs, dest, options
+      else
+        ln_file src, dest, options
+      end
+    end
+    alias_method :link, :ln
+
     def ln_s(target, path, options = {})
       options = { :force => false }.merge(options)
       (FileSystem.find(path) && !options[:force]) ?
@@ -104,6 +121,41 @@ module FakeFS
       end
 
       FileSystem.add(path, FakeSymlink.new(target))
+    end
+
+    def ln_file(src, dest, options = {})
+      if FileSystem.find(dest) && !File.directory?(dest)
+        raise Errno::EEXIST, dest unless options[:force]
+
+        FileSystem.delete dest
+      end
+
+      raise Errno::ENOENT, "(#{src}, #{dest})" unless Dir.exists?(File.dirname(dest))
+
+      dest_path = File.directory?(dest) ? File.join(dest, File.basename(src)) : dest
+
+      file = options[:symbolic] ? FakeSymlink.new(src) : FileSystem.find(src).clone
+
+      FileSystem.add dest_path, file
+
+      return 0
+    end
+
+    def ln_list(list, destdir, options = {})
+      list.each do |path|
+        dest_path = File.join(destdir, File.basename(path))
+
+        infos = [path, dest_path].join ', '
+
+        raise Errno::ENOENT, "(#{infos})" unless FileSystem.find(destdir)
+        raise Errno::ENOTDIR, "(#{infos})" unless File.directory?(destdir)
+
+        file = options[:symbolic] ? FakeSymlink.new(path) : FileSystem.find(path).clone
+
+        FileSystem.add(dest_path, file)
+      end
+
+      list
     end
 
     def ln_sf(target, path)
