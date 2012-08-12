@@ -110,18 +110,22 @@ module FakeFS
     end
     alias_method :link, :ln
 
-    def ln_s(target, path, options = {})
-      options = { :force => false }.merge(options)
-      (FileSystem.find(path) && !options[:force]) ?
-        raise(Errno::EEXIST, path) :
-        FileSystem.delete(path)
+    def ln_s(src, dest, options = {})
+      srcs = [*src]
 
-      if !options[:force] && !Dir.exists?(File.dirname(path))
-        raise Errno::ENOENT, path
+      cmd = options[:force] ? 'ln -sf' : 'ln -s'
+
+      $stderr.puts "#{cmd} #{srcs.join ' '} #{dest}" if options[:verbose]
+
+      return nil if options[:noop]
+
+      if src.is_a? Array
+        ln_list srcs, dest, options.merge(:symbolic => true)
+      else
+        ln_file src, dest, options.merge(:symbolic => true)
       end
-
-      FileSystem.add(path, FakeSymlink.new(target))
     end
+    alias_method :symlink, :ln_s
 
     def ln_file(src, dest, options = {})
       if FileSystem.find(dest) && !File.directory?(dest)

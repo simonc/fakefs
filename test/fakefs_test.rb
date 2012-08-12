@@ -123,7 +123,8 @@ class FakeFSTest < Test::Unit::TestCase
   end
 
   def test_can_create_symlinks
-    FileUtils.mkdir_p(target = "/path/to/target")
+    FileUtils.mkdir_p("/path/to")
+    FileUtils.touch(target = "/path/to/target")
     FileUtils.ln_s(target, "/path/to/link")
     assert_kind_of FakeSymlink, FileSystem.fs['path']['to']['link']
 
