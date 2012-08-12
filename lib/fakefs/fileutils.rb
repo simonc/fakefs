@@ -162,8 +162,8 @@ module FakeFS
       list
     end
 
-    def ln_sf(target, path)
-      ln_s(target, path, { :force => true })
+    def ln_sf(src, dest, options = {})
+      ln_s src, dest, options.merge(:force => true)
     end
 
     def cp(src, dest)
