@@ -166,31 +166,44 @@ module FakeFS
       ln_s src, dest, options.merge(:force => true)
     end
 
-    def cp(src, dest)
-      if src.is_a?(Array) && !File.directory?(dest)
-        raise Errno::ENOTDIR, dest
+    def cp(src, dest, options = {})
+      srcs = [*src]
+
+      if options[:preserve]
+        copied = 1 and cmd = 'cp -p'
+      else
+        copied = nil and cmd = 'cp'
       end
 
-      Array(src).each do |src|
+      $stderr.puts "#{cmd} #{srcs.join ' '} #{dest}" if options[:verbose]
+
+      return nil if options[:noop]
+
+      srcs.each do |path|
         dst_file = FileSystem.find(dest)
-        src_file = FileSystem.find(src)
+        src_file = FileSystem.find(path)
 
-        if !src_file
-          raise Errno::ENOENT, src
+        unless File.directory?(dest)
+          raise Errno::ENOTDIR, File.join(dest, File.basename(path)) if src.is_a?(Array)
+          raise Errno::ENOTDIR, dest if dest =~ /\/$/
         end
 
-        if File.directory? src_file
-          raise Errno::EISDIR, src
-        end
+        raise Errno::ENOENT, path unless src_file
+        raise Errno::EISDIR, path if File.directory?(src_file)
+
+        dest_path = File.directory?(dest) ? File.join(dest, File.basename(path)) : dest
 
         if dst_file && File.directory?(dst_file)
-          FileSystem.add(File.join(dest, src), src_file.entry.clone(dst_file))
+          FileSystem.add(dest_path, src_file.entry.clone(dst_file))
         else
           FileSystem.delete(dest)
-          FileSystem.add(dest, src_file.entry.clone)
+          FileSystem.add(dest_path, src_file.entry.clone)
         end
       end
+
+      src.is_a?(Array) ? srcs : copied
     end
+    alias_method :copy, :cp
 
     def cp_r(src, dest)
       Array(src).each do |src|

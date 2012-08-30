@@ -1136,7 +1136,7 @@ class FakeFSTest < Test::Unit::TestCase
     exception = assert_raise(Errno::ENOTDIR) do
       FileUtils.cp(%w(foo), 'baz')
     end
-    assert_equal "Not a directory - baz", exception.to_s
+    assert_equal "Not a directory - baz/foo", exception.to_s
   end
 
   def test_cp_overwrites_dest_file
